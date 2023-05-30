@@ -5,7 +5,7 @@ export default {
     return apiClient.get("users");
   },
   addUser(user) {
-    return apiClient.post("users", user);
+    return apiClient.post("register", user);
   },
   loginUser(user) {
     console.log(user);

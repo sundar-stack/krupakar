@@ -10,6 +10,12 @@ body {
   font-family: 'Poppins', sans-serif;
 }
 
+.v-application__wrap {
+  background: url("https://images.unsplash.com/photo-1464618663641-bbdd760ae84a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80");
+  background-size: cover;
+  background-position: center;
+}
+
 .color_white {
   color: #fff;
 }
@@ -29,4 +35,12 @@ body {
 
 .text_align_center {
   text-align: center;
+  text-transform: uppercase;
+}
+
+.error-msg {
+  color: orangered;
+  font-size: 18px;
+  text-align: center;
+  text-shadow: 1px 1px #00000021;
 }

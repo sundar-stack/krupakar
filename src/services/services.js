@@ -2,9 +2,9 @@ import axios from "axios";
 
 var baseurl = "";
 if (process.env.NODE_ENV === "development") {
-  baseurl = "http://localhost/recipeapi/";
+  baseurl = "http://localhost:3200/travelapi/";
 } else {
-  baseurl = "/recipeapi/";
+  baseurl = "/travelapi/";
 }
 
 const apiClient = axios.create({
@@ -30,8 +30,9 @@ const apiClient = axios.create({
   },
   transformResponse: function (data) {
     data = JSON.parse(data);
-    if (!data.success && data.code == "expired-session") {
+    if ((!data.success && data.code == "expired-session") || data?.message?.includes('Unauthorized')) {
       localStorage.removeItem("user");
+      window.location.reload();
     }
     return data;
   },

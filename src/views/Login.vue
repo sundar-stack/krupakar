@@ -18,15 +18,11 @@ const user = ref({
   password: "",
 });
 
-onMounted(async () => {
-  if (localStorage.getItem("user") !== null) {
-    router.push({ name: "recipes" });
-  }
-});
-
-function navigateToRecipes() {
-  router.push({ name: "recipes" });
-}
+// onMounted(async () => {
+//   if (localStorage.getItem("user") !== null) {
+//     router.push({ name: "recipes" });
+//   }
+// });
 
 async function createAccount() {
   await UserServices.addUser(user.value)
@@ -45,14 +41,13 @@ async function createAccount() {
 }
 
 async function login() {
-  console.log(user.value);
   await UserServices.loginUser(user)
     .then((data) => {
       window.localStorage.setItem("user", JSON.stringify(data.data));
       snackbar.value.value = true;
       snackbar.value.color = "green";
       snackbar.value.text = "Login successful!";
-      router.push({ name: "recipes" });
+      router.push({ name: "packages" });
     })
     .catch((error) => {
       console.log(error);
@@ -100,14 +95,14 @@ function closeSnackBar() {
             >Dont have an Account ?</v-btn
           >
           <v-spacer></v-spacer>
-
           <v-btn variant="flat" color="primary" @click="login()">Login</v-btn>
         </v-card-actions>
       </v-card>
-
       <v-dialog persistent v-model="isCreateAccount" width="800">
         <v-card class="rounded-lg elevation-5">
-          <v-card-title class="heading_secondary text_align_center color_grey">Create Account </v-card-title>
+          <v-card-title class="heading_secondary text_align_center color_grey"
+            >Create Account
+          </v-card-title>
           <v-card-text>
             <v-text-field
               v-model="user.firstName"
@@ -139,7 +134,7 @@ function closeSnackBar() {
               variant="flat"
               color="secondary"
               @click="closeCreateAccount()"
-              >Already have an Account ?</v-btn
+              >Close</v-btn
             >
             <v-btn variant="flat" color="primary" @click="createAccount()"
               >Create Account</v-btn
@@ -182,6 +177,6 @@ function closeSnackBar() {
   border: 2px solid #ffff;
   border-radius: 5px;
   background: #ffffff25;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(10px);
 }
 </style>
