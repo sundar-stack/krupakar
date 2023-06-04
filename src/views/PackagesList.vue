@@ -1,8 +1,8 @@
 <script setup>
 import { computed, onMounted } from "vue";
 import { ref } from "vue";
-import RecipeCard from "../components/RecipeCardComponent.vue";
-import CreateTrip from "../components/CreatePackage.vue";
+import PackageDetails from "../components/PackageDetails.vue";
+import UpsertPackage from "../components/UpsertPackage.vue";
 import RecipeServices from "../services/RecipeServices.js";
 import PackageServices from "../services/PackageServices";
 
@@ -14,7 +14,9 @@ const snackbar = ref({
   color: "",
   text: "",
 });
-const activeTab = ref("upcoming");
+const activeTab = ref("all");
+const inEdit = ref(false);
+const tripId = ref(null);
 
 onMounted(async () => {
   await getPackages();
@@ -22,8 +24,47 @@ onMounted(async () => {
 
 async function getPackages() {
   user.value = JSON.parse(localStorage.getItem("user"));
-  activeTab.value = "upcoming";
-  await PackageServices.getAllPackages()
+  activeTab.value = "all";
+  if (user.value.role === "admin") {
+    await PackageServices.getAllPackages()
+      .then((response) => {
+        packages.value = response.data;
+      })
+      .catch((error) => {
+        snackbar.value.value = true;
+        snackbar.value.color = "error";
+        snackbar.value.text = error.response.data.message;
+      });
+  } else {
+    await PackageServices.getUserPackages(user.value.id)
+      .then((response) => {
+        packages.value = response.data;
+      })
+      .catch((error) => {
+        snackbar.value.value = true;
+        snackbar.value.color = "error";
+        snackbar.value.text = error.response.data.message;
+      });
+  }
+}
+
+function openAdd() {
+  isAdd.value = true;
+}
+
+function closeCreateForm() {
+  isAdd.value = false;
+  inEdit.value = false;
+  tripId.value = null;
+}
+
+function closeSnackBar() {
+  snackbar.value.value = false;
+}
+
+async function getUserEnrolledPackages() {
+  activeTab.value = "enrolled";
+  await PackageServices.getUserEnrolledPackages(user.value.id)
     .then((response) => {
       packages.value = response.data;
     })
@@ -34,21 +75,10 @@ async function getPackages() {
     });
 }
 
-function openAdd() {
+function handleEditIconClick(id) {
   isAdd.value = true;
-}
-
-function closeCreateForm() {
-  isAdd.value = false;
-}
-
-function closeSnackBar() {
-  snackbar.value.value = false;
-}
-
-async function getUserEnrolledPackages() {
-  activeTab.value = "enrolled";
-  packages.value = [];
+  inEdit.value = true;
+  tripId.value = id;
 }
 </script>
 
@@ -60,8 +90,8 @@ async function getUserEnrolledPackages() {
           <div class="tabs__container text-align-center">
             <v-btn
               @click="getPackages"
-              :color="activeTab === 'upcoming' ? 'primary' : ''"
-              >UPCOMING PACKAGES</v-btn
+              :color="activeTab === 'all' ? 'primary' : ''"
+              >ALL PACKAGES</v-btn
             >
             <v-btn
               v-show="user?.role !== 'admin'"
@@ -78,6 +108,7 @@ async function getUserEnrolledPackages() {
             label="FILTER PACKAGES"
             density="comfortable"
             :items="[
+              'UPCOMING',
               'CANCELLED',
               'COMPLETED',
               'PRICE ABOVE 500$',
@@ -94,13 +125,15 @@ async function getUserEnrolledPackages() {
         </v-col>
       </v-row>
 
-      <RecipeCard
+      <PackageDetails
         v-show="packages && packages.length !== 0"
         v-for="packageItem in packages"
         :key="packageItem.id"
         :packageItem="packageItem"
-        @deletedList="getLists()"
+        :activeTab="activeTab"
         @getPackages="getPackages"
+        @handleEdit="handleEditIconClick"
+        @getUserEnrolledPackages="getUserEnrolledPackages"
       />
 
       <v-card
@@ -113,10 +146,12 @@ async function getUserEnrolledPackages() {
       >
 
       <v-dialog persistent v-model="isAdd" style="width: 90%">
-        <CreateTrip
+        <UpsertPackage
           @closeCreateForm="closeCreateForm"
           @getPackages="getPackages"
           :snackbar="snackbar"
+          :inEdit="inEdit"
+          :tripId="tripId"
         />
       </v-dialog>
       <v-snackbar v-model="snackbar.value" rounded="pill">

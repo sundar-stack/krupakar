@@ -15,21 +15,43 @@ const props = defineProps({
   packageItem: {
     required: true,
   },
+  activeTab: {
+    required: true,
+  },
 });
-const emitActions = defineEmits(["getPackages"]);
+const emitActions = defineEmits([
+  "getPackages",
+  "handleEdit",
+  "getUserEnrolledPackages",
+]);
 onMounted(async () => {
   user.value = JSON.parse(localStorage.getItem("user"));
 });
-
-function navigateToEdit(e) {
-  e.stopPropagation();
-  router.push({ name: "editRecipe", params: { id: props.packageItem.id } });
-}
 
 async function deletePackage(id) {
   await PackageServices.deletePackage(id);
   emitActions("getPackages");
 }
+async function handleEnrollPackage(enrollData) {
+  await PackageServices.enrollPackage(enrollData)
+    .then(() => {
+      if (props.activeTab === "enrolled") {
+        emitActions("getUserEnrolledPackages");
+      } else {
+        emitActions("getPackages");
+      }
+      props.snackbar.value = true;
+      props.snackbar.color = "green";
+      props.snackbar.text = `You have enrolled for the trip successfully!`;
+    })
+    .catch((error) => {
+      console.log(error);
+      props.snackbar.value = true;
+      props.snackbar.color = "error";
+      props.snackbar.text = error.response.data.message;
+    });
+}
+console.log({ a: props.activeTab });
 </script>
 
 <template>
@@ -53,19 +75,13 @@ async function deletePackage(id) {
             {{ moment(packageItem.startDate).format("MMMM DD, YYYY") }} to
             {{ moment(packageItem.endDate).format("MMMM DD, YYYY") }}
           </v-chip>
-          <v-btn class="mx-2" color="darkblue" v-if="user?.role === 'user'"
-            >Enroll</v-btn
-          >
-          <v-btn class="mx-2" color="error" v-if="user?.role === 'user'"
-            >Cancel</v-btn
-          >
         </v-col>
         <v-col class="d-flex justify-end" v-if="user?.role === 'admin'">
           <v-icon
             size="small"
             color="blue"
             icon="mdi-pencil"
-            @click="navigateToEdit"
+            @click="emitActions('handleEdit', packageItem.id)"
           ></v-icon>
           <v-icon
             size="small"
@@ -83,17 +99,46 @@ async function deletePackage(id) {
     <v-expand-transition>
       <v-card-text class="pt-0" v-show="showDetails">
         <h3>Package Details</h3>
+        <v-col class="d-flex justify-center" v-if="user?.role === 'user'">
+          <v-btn
+            class="mx-2"
+            color="darkblue"
+            v-if="!packageItem.isEnrolled && activeTab !== 'enrolled'"
+            @click="
+              handleEnrollPackage({
+                isEnrolled: true,
+                packageId: packageItem.id,
+                userId: user.id,
+              })
+            "
+            >Click to enroll for this package</v-btn
+          >
+          <v-btn
+            class="mx-2"
+            color="error"
+            v-else-if="packageItem.isEnrolled || activeTab === 'enrolled'"
+            @click="
+              handleEnrollPackage({
+                isEnrolled: false,
+                packageId: packageItem.id,
+                userId: user.id,
+              })
+            "
+            >Click to cancel this package</v-btn
+          >
+        </v-col>
         <v-table>
           <thead>
             <tr>
               <th class="text-left">Travel Date</th>
               <th class="text-left">Food</th>
+              <th class="text-left">Hotel</th>
               <th class="text-left">Place</th>
               <th class="text-left">Transportation</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="step in packageItem.day" :key="step.id">
+            <tr v-for="step in packageItem.dayWiseDetails" :key="step.id">
               <td>{{ moment(step.date).format("MMMM DD, YYYY") }}</td>
               <td>
                 <v-chip
@@ -104,6 +149,7 @@ async function deletePackage(id) {
                   >{{ ingredient.title }}</v-chip
                 >
               </td>
+              <td>{{ step.hotel[0].title }}</td>
               <td>{{ step.place[0].title }}</td>
               <td>{{ step.transport[0].title }}</td>
             </tr>

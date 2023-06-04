@@ -19,8 +19,14 @@ const props = defineProps({
   snackbar: {
     required: true,
   },
+  inEdit: {
+    required: true,
+  },
+  tripId: {
+    required: true,
+  },
 });
-
+const dontValidateDate = ref(false);
 const newPackage = ref({
   title: "",
   description: "",
@@ -48,22 +54,13 @@ const rules = ref({
 });
 const emitActions = defineEmits(["getPackages", "closeCreateForm"]);
 
-async function addRecipe() {
-  console.log({ newPackage });
-  await PackageServices.createPackage(newPackage.value)
-    .then(() => {
-      props.snackbar.value = true;
-      props.snackbar.color = "green";
-      props.snackbar.text = `${newPackage.value.title} added successfully!`;
-      emitActions("getPackages");
-      emitActions("closeCreateForm");
-    })
-    .catch((error) => {
-      props.snackbar.value = true;
-      props.snackbar.color = "error";
-      props.snackbar.text = error.response.data.message;
-    });
-}
+onMounted(() => {
+  console.log({ props });
+  if (props.inEdit && props.tripId) {
+    dontValidateDate.value = true;
+    getPackageDetails();
+  }
+});
 
 function handleStartAndEndDate() {
   const { startDate = "", endDate = "" } = newPackage.value;
@@ -93,7 +90,7 @@ function handleStartAndEndDate() {
           key: i,
           transport: { title: "", modified: false },
           food: { title: "", modified: false },
-          // hotel: { title: "", modified: false },
+          hotel: { title: "", modified: false },
         };
         destinationData.push(details);
       }
@@ -105,15 +102,75 @@ function handleStartAndEndDate() {
   }
 }
 
+async function addPackage() {
+  console.log({ newPackage });
+  await PackageServices.createPackage(newPackage.value)
+    .then(() => {
+      props.snackbar.value = true;
+      props.snackbar.color = "green";
+      props.snackbar.text = `${newPackage.value.title} added successfully!`;
+      emitActions("getPackages");
+      emitActions("closeCreateForm");
+    })
+    .catch((error) => {
+      props.snackbar.value = true;
+      props.snackbar.color = "error";
+      props.snackbar.text = error.response.data.message;
+    });
+}
+
+async function getPackageDetails() {
+  await PackageServices.getPackageById(props.tripId)
+    .then((response) => {
+      const tripData = response?.data || {};
+      console.log({ tripData });
+      newPackage.value.title = tripData.title;
+      newPackage.value.description = tripData.description;
+      newPackage.value.price = tripData?.price;
+      newPackage.value.startDate = moment(tripData.startDate).format(
+        "YYYY-MM-DD"
+      );
+      newPackage.value.endDate = moment(tripData.endDate).format("YYYY-MM-DD");
+      newPackage.value.dayWiseDetails = tripData?.dayWiseDetails?.map((el) => {
+        return { ...el, date: moment(el.date).format("YYYY-MM-DD") };
+      });
+    })
+    .catch((error) => {
+      props.snackbar.value = true;
+      props.snackbar.color = "error";
+      props.snackbar.text = error.response.data.message;
+    });
+}
+
+async function editPackage() {
+  await PackageServices.editPackage(tripId, newPackage.value)
+    .then(() => {
+      props.snackbar.value = true;
+      props.snackbar.color = "green";
+      props.snackbar.text = `${newPackage.value.title} updated successfully!`;
+      emitActions("getTrips");
+      emitActions("closeCreateForm");
+    })
+    .catch((error) => {
+      console.log(error);
+      props.snackbar.value = true;
+      props.snackbar.color = "error";
+      props.snackbar.text = error.response.data.message;
+    });
+}
+
 console.log({ v: newPackage.value.dayWiseDetails });
 </script>
 
 <template>
-  <v-form @submit.prevent="addRecipe" style="overflow: scroll">
+  <v-form
+    @submit.prevent="inEdit ? editPackage() : addPackage()"
+    style="overflow: scroll"
+  >
     <v-card class="rounded-lg elevation-5">
-      <v-card-title class="heading_secondary text_align_center"
-        >Create Package</v-card-title
-      >
+      <v-card-title class="heading_secondary text_align_center">{{
+        inEdit ? "Edit Package" : "Create Package"
+      }}</v-card-title>
       <v-card-text>
         <v-text-field
           v-model="newPackage.title"
@@ -144,7 +201,7 @@ console.log({ v: newPackage.value.dayWiseDetails });
             class="mx-2"
             v-model="newPackage.startDate"
             @change="handleStartAndEndDate"
-            :rules="rules.dateValidation"
+            :rules="dontValidateDate ? '' : rules.dateValidation"
             variant="outlined"
           ></v-text-field>
           <v-text-field
@@ -152,7 +209,7 @@ console.log({ v: newPackage.value.dayWiseDetails });
             label="End Date *"
             v-model="newPackage.endDate"
             @change="handleStartAndEndDate"
-            :rules="rules.dateValidation"
+            :rules="dontValidateDate ? '' : rules.dateValidation"
             variant="outlined"
           ></v-text-field>
         </v-row>
@@ -176,7 +233,7 @@ console.log({ v: newPackage.value.dayWiseDetails });
                 class="mx-2"
                 v-model="destionDetails.date"
                 disabled
-                :rules="rules.dateValidation"
+                :rules="rules.required"
                 variant="outlined"
               ></v-text-field>
               <v-text-field
@@ -194,13 +251,13 @@ console.log({ v: newPackage.value.dayWiseDetails });
                 v-model="destionDetails.food.title"
                 variant="outlined"
               ></v-text-field>
-              <!-- <v-text-field
+              <v-text-field
                 type="text"
                 label="Hotel"
                 class="mx-2"
                 v-model="destionDetails.hotel.title"
                 variant="outlined"
-              ></v-text-field> -->
+              ></v-text-field>
               <v-text-field
                 type="text"
                 label="Transportation *"
@@ -221,9 +278,9 @@ console.log({ v: newPackage.value.dayWiseDetails });
           @click="emitActions('closeCreateForm')"
           >Close</v-btn
         >
-        <v-btn variant="flat" color="primary" type="submit"
-          >Create Package</v-btn
-        >
+        <v-btn variant="flat" color="primary" type="submit">{{
+          inEdit ? "Update Package" : "Create Package"
+        }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-form>
