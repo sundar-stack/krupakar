@@ -128,7 +128,7 @@ function handleEditIconClick(id) {
       <PackageDetails
         v-show="packages && packages.length !== 0"
         v-for="packageItem in packages"
-        :key="packageItem.id"
+        :key="packageItem?.id"
         :packageItem="packageItem"
         :activeTab="activeTab"
         @getPackages="getPackages"

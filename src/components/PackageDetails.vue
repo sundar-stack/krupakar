@@ -61,19 +61,37 @@ console.log({ a: props.activeTab });
   >
     <v-card-title class="headline">
       <h3 class="text_align_center">
-        {{ packageItem.title }}
+        {{ packageItem?.title }}
+        <v-chip
+          size="small"
+          pill
+          color="blue"
+          v-if="packageItem?.titleModified"
+        >
+          MODIFIED
+          <v-icon size="small" color="blue" icon="mdi-pencil"></v-icon
+        ></v-chip>
       </h3>
       <v-row align="center">
         <v-col cols="10">
           <v-chip class="ma-2" color="primary" label>
             <v-icon start icon="mdi-currency-usd"></v-icon>
-            Package Price - {{ packageItem.price }}
+            Package Price - {{ packageItem?.price }}
+            <v-chip
+              size="small"
+              pill
+              color="blue"
+              v-if="packageItem?.priceModified"
+            >
+              MODIFIED
+              <v-icon size="small" color="blue" icon="mdi-pencil"></v-icon
+            ></v-chip>
           </v-chip>
           <v-chip class="ma-2" color="accent" label>
             <v-icon start icon="mdi-calendar-range"></v-icon>
             Package Start & End Date ---
-            {{ moment(packageItem.startDate).format("MMMM DD, YYYY") }} to
-            {{ moment(packageItem.endDate).format("MMMM DD, YYYY") }}
+            {{ moment(packageItem?.startDate).format("MMMM DD, YYYY") }} to
+            {{ moment(packageItem?.endDate).format("MMMM DD, YYYY") }}
           </v-chip>
         </v-col>
         <v-col class="d-flex justify-end" v-if="user?.role === 'admin'">
@@ -94,7 +112,16 @@ console.log({ a: props.activeTab });
       </v-row>
     </v-card-title>
     <v-card-text class="body-1">
-      {{ packageItem.description }}
+      {{ packageItem?.description }}
+      <v-chip
+        size="small"
+        pill
+        color="blue"
+        v-if="packageItem?.descriptionModified"
+      >
+        MODIFIED
+        <v-icon size="small" color="blue" icon="mdi-pencil"></v-icon
+      ></v-chip>
     </v-card-text>
     <v-expand-transition>
       <v-card-text class="pt-0" v-show="showDetails">
@@ -103,7 +130,7 @@ console.log({ a: props.activeTab });
           <v-btn
             class="mx-2"
             color="darkblue"
-            v-if="!packageItem.isEnrolled && activeTab !== 'enrolled'"
+            v-if="!packageItem?.isEnrolled && activeTab !== 'enrolled'"
             @click="
               handleEnrollPackage({
                 isEnrolled: true,
@@ -116,7 +143,7 @@ console.log({ a: props.activeTab });
           <v-btn
             class="mx-2"
             color="error"
-            v-else-if="packageItem.isEnrolled || activeTab === 'enrolled'"
+            v-else-if="packageItem?.isEnrolled || activeTab === 'enrolled'"
             @click="
               handleEnrollPackage({
                 isEnrolled: false,
@@ -138,20 +165,56 @@ console.log({ a: props.activeTab });
             </tr>
           </thead>
           <tbody>
-            <tr v-for="step in packageItem.dayWiseDetails" :key="step.id">
+            <tr v-for="step in packageItem?.dayWiseDetails" :key="step.id">
               <td>{{ moment(step.date).format("MMMM DD, YYYY") }}</td>
               <td>
+                <v-chip size="small" pill>{{ step.food[0].title }} </v-chip>
                 <v-chip
                   size="small"
-                  v-for="ingredient in step.food"
-                  :key="ingredient.id"
                   pill
-                  >{{ ingredient.title }}</v-chip
+                  color="blue"
+                  v-if="step.food[0].modified"
                 >
+                  MODIFIED
+                  <v-icon size="small" color="blue" icon="mdi-pencil"></v-icon
+                ></v-chip>
               </td>
-              <td>{{ step.hotel[0].title }}</td>
-              <td>{{ step.place[0].title }}</td>
-              <td>{{ step.transport[0].title }}</td>
+              <td>
+                {{ step.hotel[0].title }}
+                <v-chip
+                  size="small"
+                  pill
+                  color="blue"
+                  v-if="step.hotel[0].modified"
+                >
+                  MODIFIED
+                  <v-icon size="small" color="blue" icon="mdi-pencil"></v-icon
+                ></v-chip>
+              </td>
+              <td>
+                {{ step.place[0].title }}
+                <v-chip
+                  size="small"
+                  pill
+                  color="blue"
+                  v-if="step.place[0].modified"
+                >
+                  MODIFIED
+                  <v-icon size="small" color="blue" icon="mdi-pencil"></v-icon
+                ></v-chip>
+              </td>
+              <td>
+                {{ step.transport[0].title }}
+                <v-chip
+                  size="small"
+                  pill
+                  color="blue"
+                  v-if="step.transport[0].modified"
+                >
+                  MODIFIED
+                  <v-icon size="small" color="blue" icon="mdi-pencil"></v-icon
+                ></v-chip>
+              </td>
             </tr>
           </tbody>
         </v-table>

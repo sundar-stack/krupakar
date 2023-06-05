@@ -27,6 +27,7 @@ const props = defineProps({
   },
 });
 const dontValidateDate = ref(false);
+const isDateModified = ref(false);
 const newPackage = ref({
   title: "",
   description: "",
@@ -64,6 +65,7 @@ onMounted(() => {
 
 function handleStartAndEndDate() {
   const { startDate = "", endDate = "" } = newPackage.value;
+  isDateModified.value = true;
   if (startDate && endDate) {
     if (isEndDateBeforeStartDate(endDate, startDate)) {
       newPackage.value.dayWiseDetails = [];
@@ -123,7 +125,7 @@ async function getPackageDetails() {
   await PackageServices.getPackageById(props.tripId)
     .then((response) => {
       const tripData = response?.data || {};
-      console.log({ tripData });
+      newPackage.value.id = tripData.id;
       newPackage.value.title = tripData.title;
       newPackage.value.description = tripData.description;
       newPackage.value.price = tripData?.price;
@@ -131,8 +133,16 @@ async function getPackageDetails() {
         "YYYY-MM-DD"
       );
       newPackage.value.endDate = moment(tripData.endDate).format("YYYY-MM-DD");
+      newPackage.value.totalDays = tripData.totalDays;
       newPackage.value.dayWiseDetails = tripData?.dayWiseDetails?.map((el) => {
-        return { ...el, date: moment(el.date).format("YYYY-MM-DD") };
+        return {
+          ...el,
+          date: moment(el.date).format("YYYY-MM-DD"),
+          place: el.place[0],
+          transport: el.transport[0],
+          food: el.food[0],
+          hotel: el.hotel[0],
+        };
       });
     })
     .catch((error) => {
@@ -143,12 +153,31 @@ async function getPackageDetails() {
 }
 
 async function editPackage() {
-  await PackageServices.editPackage(tripId, newPackage.value)
+  const updatePackageBody = {
+    ...newPackage.value,
+    startDate: newPackage.value.startDate + "T00:00:00.000Z",
+    endDate: newPackage.value.endDate + "T00:00:00.000Z",
+  };
+  if (!isDateModified.value) {
+    updatePackageBody.dayWiseDetails = newPackage.value?.dayWiseDetails?.map(
+      (el) => {
+        return {
+          ...el,
+          place: [el.place],
+          transport: [el.transport],
+          food: [el.food],
+          hotel: [el.hotel],
+        };
+      }
+    );
+  }
+  console.log({ updatePackageBody });
+  await PackageServices.editPackage(props.tripId, updatePackageBody)
     .then(() => {
       props.snackbar.value = true;
       props.snackbar.color = "green";
       props.snackbar.text = `${newPackage.value.title} updated successfully!`;
-      emitActions("getTrips");
+      emitActions("getPackages");
       emitActions("closeCreateForm");
     })
     .catch((error) => {

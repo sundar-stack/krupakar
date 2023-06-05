@@ -16,7 +16,7 @@ export default {
   getPackageById(id) {
     return apiClient.get(`package/${id}`);
   },
-  updatePackage(id, updatedPackageBody) {
+  editPackage(id, updatedPackageBody) {
     return apiClient.put(`package/${id}`, updatedPackageBody);
   },
   enrollPackage(enrollData) {
